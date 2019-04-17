@@ -255,7 +255,8 @@ int main(int argc, char *argv[])
 //
 // Callback function to process data packet from sensor
 //
-/*void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
+/*
+void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
 {
 	
     if (p.type() == Packet::TYPE_BINARY)
@@ -395,7 +396,8 @@ int main(int argc, char *argv[])
         pubPres.publish(msgPres);
   
     }
-}*/
+}
+*/
 void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
 {
     vn::sensors::CompositeData cd = vn::sensors::CompositeData::parse(p);
@@ -561,6 +563,7 @@ void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
         msgPres.header.frame_id = msgIMU.header.frame_id;
         msgPres.fluid_pressure = pres;
         pubPres.publish(msgPres);
+    }
 }
 
 
