@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
 //
 // Callback function to process data packet from sensor
 //
-void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
+/*void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
 {
 	
     if (p.type() == Packet::TYPE_BINARY)
@@ -395,5 +395,172 @@ void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
         pubPres.publish(msgPres);
   
     }
+}*/
+void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
+{
+    vn::sensors::CompositeData cd = vn::sensors::CompositeData::parse(p);
+
+    // IMU
+    sensor_msgs::Imu msgIMU;
+    msgIMU.header.stamp = ros::Time::now();
+    msgIMU.header.frame_id = frame_id;
+
+    if (cd.hasQuaternion() && cd.hasAngularRate() && cd.hasAcceleration())
+    {
+
+        vec4f q = cd.quaternion();
+        vec3f ar = cd.angularRate();
+        vec3f al = cd.acceleration();
+
+        //Quaternion message comes in as a Yaw (z) Pitch (y) Roll (x) format
+        if (tf_ned_to_enu)
+        {
+            // Flip x and y then invert z
+            msgIMU.orientation.x = q[1];
+            msgIMU.orientation.y = q[0];
+            msgIMU.orientation.z = -q[2];
+            msgIMU.orientation.w = q[3];
+
+            if (cd.hasAttitudeUncertainty())
+            {
+                vec3f orientationStdDev = cd.attitudeUncertainty();
+                msgIMU.orientation_covariance[0] = orientationStdDev[1]*orientationStdDev[1]*PI/180; // Convert to radians Pitch
+                msgIMU.orientation_covariance[4] = orientationStdDev[0]*orientationStdDev[0]*PI/180; // Convert to radians Roll
+                msgIMU.orientation_covariance[8] = orientationStdDev[2]*orientationStdDev[2]*PI/180; // Convert to radians Yaw
+            }
+            // Flip x and y then invert z
+            msgIMU.angular_velocity.x = ar[1];
+            msgIMU.angular_velocity.y = ar[0];
+            msgIMU.angular_velocity.z = -ar[2];
+            // Flip x and y then invert z
+            msgIMU.linear_acceleration.x = al[1];
+            msgIMU.linear_acceleration.y = al[0];
+            msgIMU.linear_acceleration.z = -al[2];
+        }
+        else
+        {
+            msgIMU.orientation.x = q[0];
+            msgIMU.orientation.y = q[1];
+            msgIMU.orientation.z = q[2];
+            msgIMU.orientation.w = q[3];
+
+            if (cd.hasAttitudeUncertainty())
+            {
+                vec3f orientationStdDev = cd.attitudeUncertainty();
+                msgIMU.orientation_covariance[0] = orientationStdDev[2]*orientationStdDev[2]*PI/180; // Convert to radians Roll
+                msgIMU.orientation_covariance[4] = orientationStdDev[1]*orientationStdDev[1]*PI/180; // Convert to radians Pitch
+                msgIMU.orientation_covariance[8] = orientationStdDev[0]*orientationStdDev[0]*PI/180; // Convert to radians Yaw
+            }
+            msgIMU.angular_velocity.x = ar[0];
+            msgIMU.angular_velocity.y = ar[1];
+            msgIMU.angular_velocity.z = ar[2];
+            msgIMU.linear_acceleration.x = al[0];
+            msgIMU.linear_acceleration.y = al[1];
+            msgIMU.linear_acceleration.z = al[2];
+        }
+        // Covariances pulled from parameters
+        msgIMU.angular_velocity_covariance = angular_vel_covariance;
+        msgIMU.linear_acceleration_covariance = linear_accel_covariance;
+        pubIMU.publish(msgIMU);
+    }
+
+    // Magnetic Field
+    if (cd.hasMagnetic())
+    {
+        vec3f mag = cd.magnetic();
+        sensor_msgs::MagneticField msgMag;
+        msgMag.header.stamp = msgIMU.header.stamp;
+        msgMag.header.frame_id = msgIMU.header.frame_id;
+        msgMag.magnetic_field.x = mag[0];
+        msgMag.magnetic_field.y = mag[1];
+        msgMag.magnetic_field.z = mag[2];
+        pubMag.publish(msgMag);
+    }
+
+    // GPS
+    if (cd.insStatus() == INSSTATUS_GPS_FIX)
+    {
+        vec3d lla = cd.positionEstimatedLla();
+
+        sensor_msgs::NavSatFix msgGPS;
+        msgGPS.header.stamp = msgIMU.header.stamp;
+        msgGPS.header.frame_id = msgIMU.header.frame_id;
+        msgGPS.latitude = lla[0];
+        msgGPS.longitude = lla[1];
+        msgGPS.altitude = lla[2];
+        pubGPS.publish(msgGPS);
+
+        // Odometry
+        if (pubOdom.getNumSubscribers() > 0)
+        {
+            nav_msgs::Odometry msgOdom;
+            msgOdom.header.stamp = msgIMU.header.stamp;
+            msgOdom.header.frame_id = msgIMU.header.frame_id;
+            vec3d pos = cd.positionEstimatedEcef();
+
+            if (!initial_position_set)
+            {
+                initial_position_set = true;
+                initial_position.x = pos[0];
+                initial_position.y = pos[1];
+                initial_position.z = pos[2];
+            }
+
+            msgOdom.pose.pose.position.x = pos[0] - initial_position[0];
+            msgOdom.pose.pose.position.y = pos[1] - initial_position[1];
+            msgOdom.pose.pose.position.z = pos[2] - initial_position[2];
+
+            if (cd.hasQuaternion())
+            {
+                vec4f q = cd.quaternion();
+
+                msgOdom.pose.pose.orientation.x = q[0];
+                msgOdom.pose.pose.orientation.y = q[1];
+                msgOdom.pose.pose.orientation.z = q[2];
+                msgOdom.pose.pose.orientation.w = q[2];
+            }
+            if (cd.hasVelocityEstimatedBody())
+            {
+                vec3f vel = cd.velocityEstimatedBody();
+
+                msgOdom.twist.twist.linear.x = vel[0];
+                msgOdom.twist.twist.linear.y = vel[1];
+                msgOdom.twist.twist.linear.z = vel[2];
+            }
+            if (cd.hasAngularRate())
+            {
+                vec3f ar = cd.angularRate();
+
+                msgOdom.twist.twist.angular.x = ar[0];
+                msgOdom.twist.twist.angular.y = ar[1];
+                msgOdom.twist.twist.angular.z = ar[2];
+            }
+            pubOdom.publish(msgOdom);
+        }
+    }
+
+    // Temperature
+    if (cd.hasTemperature())
+    {
+        float temp = cd.temperature();
+
+        sensor_msgs::Temperature msgTemp;
+        msgTemp.header.stamp = msgIMU.header.stamp;
+        msgTemp.header.frame_id = msgIMU.header.frame_id;
+        msgTemp.temperature = temp;
+        pubTemp.publish(msgTemp);
+    }
+
+    // Barometer
+    if (cd.hasPressure())
+    {
+        float pres = cd.pressure();
+
+        sensor_msgs::FluidPressure msgPres;
+        msgPres.header.stamp = msgIMU.header.stamp;
+        msgPres.header.frame_id = msgIMU.header.frame_id;
+        msgPres.fluid_pressure = pres;
+        pubPres.publish(msgPres);
 }
+
 
