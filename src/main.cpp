@@ -103,6 +103,10 @@ int main(int argc, char *argv[])
     pubTemp = n.advertise<sensor_msgs::Temperature>("vectornav/Temp", 1000);
     pubPres = n.advertise<sensor_msgs::FluidPressure>("vectornav/Pres", 1000);
 
+    //Reset Odom service
+    resetOdomsrv= n.advertiseService("reset_odom",resetOdom);
+
+
     // Serial Port Settings
     string SensorPort;
     int SensorBaudrate;
@@ -218,7 +222,11 @@ int main(int argc, char *argv[])
 		IMUGROUP_NONE,
 		GPSGROUP_NONE,
 		ATTITUDEGROUP_YPRU, //<-- returning yaw pitch roll uncertainties
-		INSGROUP_NONE);
+		INSGROUP_INSSTATUS
+        | INSGROUP_POSLLA
+        | INSGROUP_POSECEF
+        | INSGROUP_VELBODY
+        | INSGROUP_ACCELECEF);
 
     vs.writeBinaryOutput1(bor);
     vs.registerAsyncPacketReceivedHandler(NULL, BinaryAsyncMessageReceived);
