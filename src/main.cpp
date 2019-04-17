@@ -482,7 +482,7 @@ void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
     }
 
     // GPS
-    if (cd.insStatus() == INSSTATUS_GPS_FIX)
+    if (true)//(cd.insStatus() == INSSTATUS_GPS_FIX)
     {
         cout<<"GPS received"<<endl;
         vec3d lla = cd.positionEstimatedLla();
