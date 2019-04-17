@@ -470,7 +470,7 @@ void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
     if (cd.hasMagnetic())
     {
         
-        cout<<"MAG received"<<endl;
+        //cout<<"MAG received"<<endl;
         vec3f mag = cd.magnetic();
         sensor_msgs::MagneticField msgMag;
         msgMag.header.stamp = msgIMU.header.stamp;
@@ -484,7 +484,7 @@ void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
     // GPS
     if (true)//(cd.insStatus() == INSSTATUS_GPS_FIX)
     {
-        cout<<"GPS received"<<endl;
+        //cout<<"GPS received"<<endl;
         vec3d lla = cd.positionEstimatedLla();
 
         sensor_msgs::NavSatFix msgGPS;
@@ -548,7 +548,7 @@ void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
     // Temperature
     if (cd.hasTemperature())
     {
-        cout<<"Temp received"<<endl;
+        //cout<<"Temp received"<<endl;
         float temp = cd.temperature();
 
         sensor_msgs::Temperature msgTemp;
@@ -561,7 +561,7 @@ void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
     // Barometer
     if (cd.hasPressure())
     {
-        cout<<"Pressure received"<<endl;
+        //cout<<"Pressure received"<<endl;
         float pres = cd.pressure();
 
         sensor_msgs::FluidPressure msgPres;
