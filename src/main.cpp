@@ -498,7 +498,7 @@ void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
         // Odometry
         if (pubOdom.getNumSubscribers() > 0)
         {
-            cout<<"Odom received"<<endl;
+            //cout<<"Odom received"<<endl;
             nav_msgs::Odometry msgOdom;
             msgOdom.header.stamp = msgIMU.header.stamp;
             msgOdom.header.frame_id = msgIMU.header.frame_id;
