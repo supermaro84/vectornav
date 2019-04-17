@@ -409,7 +409,7 @@ void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
 
     if (cd.hasQuaternion() && cd.hasAngularRate() && cd.hasAcceleration())
     {
-        cout<<"IMU received"<<endl;
+        //cout<<"IMU received"<<endl;
         vec4f q = cd.quaternion();
         vec3f ar = cd.angularRate();
         vec3f al = cd.acceleration();
