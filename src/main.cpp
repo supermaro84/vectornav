@@ -409,7 +409,7 @@ void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
 
     if (cd.hasQuaternion() && cd.hasAngularRate() && cd.hasAcceleration())
     {
-
+        cout<<"IMU received"<<endl;
         vec4f q = cd.quaternion();
         vec3f ar = cd.angularRate();
         vec3f al = cd.acceleration();
@@ -469,6 +469,8 @@ void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
     // Magnetic Field
     if (cd.hasMagnetic())
     {
+        
+        cout<<"MAG received"<<endl;
         vec3f mag = cd.magnetic();
         sensor_msgs::MagneticField msgMag;
         msgMag.header.stamp = msgIMU.header.stamp;
@@ -482,6 +484,7 @@ void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
     // GPS
     if (cd.insStatus() == INSSTATUS_GPS_FIX)
     {
+        cout<<"GPS received"<<endl;
         vec3d lla = cd.positionEstimatedLla();
 
         sensor_msgs::NavSatFix msgGPS;
@@ -495,6 +498,7 @@ void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
         // Odometry
         if (pubOdom.getNumSubscribers() > 0)
         {
+            cout<<"Odom received"<<endl;
             nav_msgs::Odometry msgOdom;
             msgOdom.header.stamp = msgIMU.header.stamp;
             msgOdom.header.frame_id = msgIMU.header.frame_id;
@@ -544,6 +548,7 @@ void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
     // Temperature
     if (cd.hasTemperature())
     {
+        cout<<"Temp received"<<endl;
         float temp = cd.temperature();
 
         sensor_msgs::Temperature msgTemp;
@@ -556,6 +561,7 @@ void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index)
     // Barometer
     if (cd.hasPressure())
     {
+        cout<<"Pressure received"<<endl;
         float pres = cd.pressure();
 
         sensor_msgs::FluidPressure msgPres;
