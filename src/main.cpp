@@ -25,7 +25,7 @@
 
 #include <iostream>
 #define PI 3.14159265358979323846  /* pi */
-
+#include <cmath>
 // ROS Libraries
 #include "ros/ros.h"
 #include "sensor_msgs/Imu.h"
