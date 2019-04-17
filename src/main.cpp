@@ -229,6 +229,8 @@ int main(int argc, char *argv[])
         | INSGROUP_ACCELECEF);
 
     vs.writeBinaryOutput1(bor);
+    //Set data output Freq
+    vs.writeAsyncDataOutputFrequency(async_output_rate);
     vs.registerAsyncPacketReceivedHandler(NULL, BinaryAsyncMessageReceived);
 
 
