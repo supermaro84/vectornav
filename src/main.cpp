@@ -31,10 +31,13 @@
 #include "sensor_msgs/Imu.h"
 #include "sensor_msgs/MagneticField.h"
 #include "sensor_msgs/NavSatFix.h"
+#include "nav_msgs/Odometry.h"
 #include "sensor_msgs/Temperature.h"
 #include "sensor_msgs/FluidPressure.h"
+#include "std_srvs/Empty.h"
 
-ros::Publisher pubIMU, pubMag, pubGPS, pubTemp, pubPres;
+ros::Publisher pubIMU, pubMag, pubGPS, pubOdom, pubTemp, pubPres;
+ros::ServiceServer resetOdomsrv;
 
 //Unused covariances initilized to zero's
 boost::array<double, 9ul> linear_accel_covariance = { };
@@ -44,6 +47,8 @@ XmlRpc::XmlRpcValue rpc_temp;
 
 // Include this header file to get access to VectorNav sensors.
 #include "vn/sensors.h"
+#include "vn/compositedata.h"
+#include "vn/util.h"
 
 using namespace std;
 using namespace vn::math;
@@ -57,6 +62,10 @@ void BinaryAsyncMessageReceived(void* userData, Packet& p, size_t index);
 std::string frame_id;
 //boolean to use ned or enu frame. Defaults to enu which is data format from sensor.
 bool tf_ned_to_enu;
+
+// Initial position after getting a GPS fix.
+vec3d initial_position;
+bool initial_position_set = false;
 
 //Basic loop so we can initilize our covariance parameters above
 boost::array<double, 9ul> setCov(XmlRpc::XmlRpcValue rpc){
@@ -73,6 +82,13 @@ boost::array<double, 9ul> setCov(XmlRpc::XmlRpcValue rpc){
     return output;
 }
 
+// Reset initial position to current position
+bool resetOdom(std_srvs::Empty::Request &req, std_srvs::Empty::Response &resp)
+{
+    initial_position_set = false;
+    return true;
+}
+
 int main(int argc, char *argv[])
 {
 
@@ -83,6 +99,7 @@ int main(int argc, char *argv[])
     pubIMU = n.advertise<sensor_msgs::Imu>("vectornav/IMU", 1000);
     pubMag = n.advertise<sensor_msgs::MagneticField>("vectornav/Mag", 1000);
     pubGPS = n.advertise<sensor_msgs::NavSatFix>("vectornav/GPS", 1000);
+    pubOdom = n.advertise<nav_msgs::Odometry>("vectornav/Odom", 1000); 
     pubTemp = n.advertise<sensor_msgs::Temperature>("vectornav/Temp", 1000);
     pubPres = n.advertise<sensor_msgs::FluidPressure>("vectornav/Pres", 1000);
 
